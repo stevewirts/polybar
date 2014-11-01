@@ -166,7 +166,6 @@ Element providing solution to no problem in particular.
         Object.observe(this, function(changeSet){
           if (!that.isScrolling) {
 
-
             var direction = that.orientation === 'y' ? 'top' : 'left',
                 setPercent = changeSet[0].object.percent_;
 
@@ -174,8 +173,6 @@ Element providing solution to no problem in particular.
             setPercent = setPercent > 100 ? 100 : setPercent;
 
             that.thumb.style[direction] = setPercent  + '%';
-            console.log(setPercent, that.thumb.style[direction]);
-
           }
         });
       },
