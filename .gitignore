@@ -1,0 +1,6 @@
+polymer
+chai
+platform
+web-component-tester
+mocha
+*.zip

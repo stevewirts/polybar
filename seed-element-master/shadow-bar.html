@@ -1,0 +1,276 @@
+<!--
+    @license
+    Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+    This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+    The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+    The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+    Code distributed by Google as part of the polymer project is also
+    subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Element providing solution to no problem in particular.
+
+##### Example
+
+    <seed-element></seed-element>
+
+@element seed-element
+@blurb Element providing solution to no problem in particular.
+@status alpha
+@homepage http://polymerlabs.github.io/seed-element
+-->
+<polymer-element name="shadow-bar" attributes="notitle author percent">
+
+<template>
+		<style>
+		.scroll-bar {
+			width: 15px;
+			position: absolute;
+			top:0;
+			bottom:0;
+			right:0;
+			background-color: lightgrey;
+		}
+		.scroll-bar-gutter {
+			position: absolute;
+			top: 0%;
+			bottom: 0%;
+			right: 0%;
+			left: 0%;
+			margin-top: 15px;
+			margin-bottom: 35px;
+		}
+		.scroll-bar.horizontal {
+			height: 15px;
+			width: 100%;
+			position: absolute;
+			left:0;
+			right: 100%;
+			top:100%;
+		}
+
+		.horizontal .scroll-bar-gutter {
+			position: absolute;
+			top: 0%;
+			bottom: 0%;
+			right: 0%;
+			left: 0%;
+			margin-top: 0px;
+			margin-bottom: 0px;
+			margin-left: 15px;
+			margin-right: 35px;
+		}
+
+		.scroll-bar-up{
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 15px;
+			height: 15px;
+			background-color: darkgrey;
+		}
+
+		.scroll-bar.horizontal .scroll-bar-up{
+			position: absolute;
+			top: 0;
+			right: 0;
+			left: auto;
+			width: 15px;
+			height: 15px;
+			background-color: darkgrey;
+		}
+
+		.scroll-bar-thumb {
+			background-color: steelblue;
+			width: 15px;
+			height: 20px;
+			top: 0;
+			left: 0px;
+			position: absolute;
+		}
+		.scroll-bar-thumb:active {
+		  cursor: default;
+		}
+
+		.scroll-bar.horizontal .scroll-bar-thumb {
+			height: 15px;
+			width: 20px;
+			left: 0px;
+			top: 0;
+			position: absolute;
+		}
+
+		.scroll-bar-down{
+			position: absolute;
+			right: 0;
+			bottom: 0;
+			width: 15px;
+			height: 15px;
+			background-color: darkgrey;
+		}
+		.scroll-bar.horizontal .scroll-bar-down{
+			position: absolute;
+			left: 0;
+			width: 15px;
+			height: 15px;
+			background-color: darkgrey;
+		}
+
+		</style>
+		<div class="scroll-bar">
+			<div class="scroll-bar-up"></div>
+			<div class="scroll-bar-gutter">
+				<div class="scroll-bar-thumb" draggable="false"></div>
+			</div>
+			<div class="scroll-bar-down"></div>
+		</div>
+	</template>
+
+  <script>
+
+    Polymer({
+      /**
+       * The `author` attribute sets an initial author
+       *
+       * @attribute author
+       * @type string
+       * @default 'Dimitri Glazkov'
+       */
+      author: 'Xavier ONeil',
+
+      ready: function() {
+        // get the actionable child elements
+        this.bar = this.shadowRoot.querySelector('.scroll-bar');
+        this.thumb = this.shadowRoot.querySelector('.scroll-bar-thumb');
+        this.gutter = this.shadowRoot.querySelector('.scroll-bar-gutter');
+
+        this.configureOrientation();
+
+        var bounds = this.bounds = this.getBoundingClientRect();
+        this.isScrolling = false;
+
+        this.attachThumbMouseDown()
+            .attachThumbMouseMove()
+            .attachThumbMouseUp();
+
+        this.setPercentObservable();
+
+
+      },
+
+      setPercentObservable: function(){
+        var that = this;
+
+        Object.observe(this, function(changeSet){
+          if (!that.isScrolling) {
+
+
+            var direction = that.orientation === 'y' ? 'top' : 'left',
+                setPercent = changeSet[0].object.percent_;
+
+            setPercent = setPercent < 0 ? 0 : setPercent;
+            setPercent = setPercent > 100 ? 100 : setPercent;
+
+            that.thumb.style[direction] = setPercent  + '%';
+            console.log(setPercent, that.thumb.style[direction]);
+
+          }
+        });
+      },
+
+      attachThumbMouseDown : function() {
+          var that = this;
+
+          that.thumb.addEventListener('mousedown', function(event) {
+              that.isScrolling = true;
+              that.offset = event['offset' + that.orientation.toUpperCase()];
+          });
+
+          return that;
+      },
+
+      attachThumbMouseMove : function() {
+          var that = this;
+
+          document.addEventListener('mousemove', function(event) {
+              if (that.isScrolling) {
+
+                  that.moveThumb(event['page' + that.orientation.toUpperCase()] );
+              }
+          });
+
+          return that;
+      },
+
+      attachThumbMouseUp : function() {
+          var that = this;
+          document.addEventListener('mouseup', function(event) {
+              if (that.isScrolling) {
+                  that.isScrolling = false;
+              }
+          });
+
+          return that;
+      },
+
+      percent: 0,
+
+      normalizeRange: function(value){
+
+          var offBy = value,
+              maxScroll = this.getMaxScroll();
+
+          if (!offBy){
+            return 0
+          }
+
+          offBy = offBy < 0 ? 0 : offBy;
+          offBy = offBy / maxScroll;
+          offBy = offBy > 1 ? 1 : offBy;
+          offBy = offBy * 100;
+
+          return offBy
+      },
+
+      moveThumb : function(pageLocation) {
+          var that = this,
+              direction = this.orientation === 'y' ? 'top' : 'left',
+              distanceFromEdge = that.gutter.getBoundingClientRect(),
+              offBy =  pageLocation - distanceFromEdge[direction] - that.offset;
+
+          offBy = that.normalizeRange(offBy);
+
+          that.thumb.style[direction] = offBy + '%';
+
+          this.percent = offBy.toFixed(2)
+      }, //end movethumb value
+
+      setOrientation : function(orientation) {
+          this.orientation = orientation;
+
+      },
+
+      getMaxScroll : function() {
+          var direction = this.orientation === 'y' ? 'clientHeight' : 'clientWidth';
+          return this.gutter[direction];
+
+      },
+
+      configureOrientation : function() {
+          var orientation = 'y';
+
+          if ('horizontal' in this.attributes) {
+              orientation = 'x';
+              this.bar.classList.add('horizontal');
+          }
+
+          this.setOrientation(orientation);
+      }
+
+    });
+
+  </script>
+
+</polymer-element>

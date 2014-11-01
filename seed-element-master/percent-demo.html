@@ -1,0 +1,68 @@
+<!--
+    @license
+    Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+    This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+    The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+    The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+    Code distributed by Google as part of the polymer project is also
+    subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="shadow-bar.html">
+
+<!--
+Element providing solution to no problem in particular.
+
+##### Example
+
+    <seed-element></seed-element>
+
+@element seed-element
+@blurb Element providing solution to no problem in particular.
+@status alpha
+@homepage http://polymerlabs.github.io/seed-element
+-->
+<polymer-element name="percent-demo" attributes="notitle author">
+
+<template>
+    <style>
+      .demo-div {
+        width: 200px;
+        height: 300px;
+        background-color: indianred;
+        position: relative;
+      }
+
+    </style>
+	  <div class="demo-div">
+      <shadow-bar percent="{{percent}}"></shadow-bar>
+    </div>
+    <div>Current % {{percent}}</div>
+    Set to <input value="{{percent}}"></input>
+</template>
+
+  <script>
+
+    Polymer({
+      /**
+       * The `author` attribute sets an initial author
+       *
+       * @attribute author
+       * @type string
+       * @default 'Dimitri Glazkov'
+       */
+      author: 'Xavier ONeil',
+
+
+
+      ready: function() {
+        this.percent = this.shadowRoot.querySelector('shadow-bar').percent
+        console.log('this is the shadow bar',this.shadowRoot.querySelector('shadow-bar').percent)
+      },
+
+
+    });
+
+  </script>
+
+</polymer-element>
