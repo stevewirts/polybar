@@ -130,143 +130,155 @@ Element providing solution to no problem in particular.
 
   <script>
 
-    Polymer({
-      /**
-       * The `author` attribute sets an initial author
-       *
-       * @attribute author
-       * @type string
-       * @default 'Dimitri Glazkov'
-       */
-      author: 'Xavier ONeil',
+    (function(Polymer){
 
-      ready: function() {
-        // get the actionable child elements
-        this.bar = this.shadowRoot.querySelector('.scroll-bar');
-        this.thumb = this.shadowRoot.querySelector('.scroll-bar-thumb');
-        this.gutter = this.shadowRoot.querySelector('.scroll-bar-gutter');
 
-        this.configureOrientation();
+      var isScrolling = false, 
+          orientation = 'y',
+          shadowRoot,bar, thumb, gutter, 
+          polyElementContext,  offset;
 
-        var bounds = this.bounds = this.getBoundingClientRect();
-        this.isScrolling = false;
+      var scrollBarPrivate = {
 
-        this.attachThumbMouseDown()
+        init: function(shadowRoot){
+
+          bar = shadowRoot.querySelector('.scroll-bar');
+          thumb = shadowRoot.querySelector('.scroll-bar-thumb');
+          gutter = shadowRoot.querySelector('.scroll-bar-gutter');
+
+          return this;
+        },
+
+        setPercentObservable: function(){
+
+          Object.observe(polyElementContext, function(changeSet){
+            if (!isScrolling) {
+              console.log('here we go')
+              var direction = orientation === 'y' ? 'top' : 'left',
+                  setPercent = changeSet[0].object.percent_;
+
+              setPercent = setPercent < 0 ? 0 : setPercent;
+              setPercent = setPercent > 100 ? 100 : setPercent;
+
+              thumb.style[direction] = setPercent  + '%';
+            }
+          });
+
+          return this;  
+        },
+
+        attachThumbMouseDown : function() {
+            var that = this;
+
+            thumb.addEventListener('mousedown', function(event) {
+                isScrolling = true;
+                offset = event['offset' + orientation.toUpperCase()];
+            });
+
+            return that;
+        },
+
+        attachThumbMouseMove : function() {
+            var that = this;
+
+            document.addEventListener('mousemove', function(event) {
+                if (isScrolling) {
+
+                    that.moveThumb(event['page' + orientation.toUpperCase()] );
+                }
+            });
+
+            return that;
+        },
+
+        attachThumbMouseUp : function() {
+            var that = this;
+            document.addEventListener('mouseup', function(event) {
+                if (isScrolling) {
+                    isScrolling = false;
+                }
+            });
+
+            return that;
+        },
+
+        normalizeRange: function(value){
+
+            var offBy = value,
+                maxScroll = this.getMaxScroll();
+
+            if (!offBy){
+              return 0
+            }
+
+            offBy = offBy < 0 ? 0 : offBy;
+            offBy = offBy / maxScroll;
+            offBy = offBy > 1 ? 1 : offBy;
+            offBy = offBy * 100;
+
+            return offBy
+        },
+
+        moveThumb : function(pageLocation) {
+            var that = this,
+                direction = orientation === 'y' ? 'top' : 'left',
+                distanceFromEdge = gutter.getBoundingClientRect(),
+                offBy =  pageLocation - distanceFromEdge[direction] - offset;
+
+            offBy = that.normalizeRange(offBy);
+
+            thumb.style[direction] = offBy + '%';
+
+            polyElementContext.percent = offBy.toFixed(2)
+        }, //end movethumb value
+
+        getMaxScroll : function() {
+            var direction = orientation === 'y' ? 'clientHeight' : 'clientWidth';
+            return gutter[direction];
+
+        },
+
+        configureOrientation : function() {
+            orientation = 'y';
+
+            if ('horizontal' in polyElementContext.attributes) {
+                orientation = 'x';
+                this.bar.classList.add('horizontal');
+            }
+
+            return this;
+        }
+      };
+
+
+
+      Polymer({
+      
+        author: 'Xavier ONeil',
+
+        ready: function() {
+          polyElementContext = this;
+
+          scrollBarPrivate
+            .init(polyElementContext.shadowRoot)
+            .setPercentObservable()
+            .configureOrientation()
+            .attachThumbMouseDown()
             .attachThumbMouseMove()
             .attachThumbMouseUp();
 
-        this.setPercentObservable();
+        },
+
+        percent: 0
+
+      });//end polymer registration 
 
 
-      },
 
-      setPercentObservable: function(){
-        var that = this;
 
-        Object.observe(this, function(changeSet){
-          if (!that.isScrolling) {
+    })(Polymer)
 
-            var direction = that.orientation === 'y' ? 'top' : 'left',
-                setPercent = changeSet[0].object.percent_;
-
-            setPercent = setPercent < 0 ? 0 : setPercent;
-            setPercent = setPercent > 100 ? 100 : setPercent;
-
-            that.thumb.style[direction] = setPercent  + '%';
-          }
-        });
-      },
-
-      attachThumbMouseDown : function() {
-          var that = this;
-
-          that.thumb.addEventListener('mousedown', function(event) {
-              that.isScrolling = true;
-              that.offset = event['offset' + that.orientation.toUpperCase()];
-          });
-
-          return that;
-      },
-
-      attachThumbMouseMove : function() {
-          var that = this;
-
-          document.addEventListener('mousemove', function(event) {
-              if (that.isScrolling) {
-
-                  that.moveThumb(event['page' + that.orientation.toUpperCase()] );
-              }
-          });
-
-          return that;
-      },
-
-      attachThumbMouseUp : function() {
-          var that = this;
-          document.addEventListener('mouseup', function(event) {
-              if (that.isScrolling) {
-                  that.isScrolling = false;
-              }
-          });
-
-          return that;
-      },
-
-      percent: 0,
-
-      normalizeRange: function(value){
-
-          var offBy = value,
-              maxScroll = this.getMaxScroll();
-
-          if (!offBy){
-            return 0
-          }
-
-          offBy = offBy < 0 ? 0 : offBy;
-          offBy = offBy / maxScroll;
-          offBy = offBy > 1 ? 1 : offBy;
-          offBy = offBy * 100;
-
-          return offBy
-      },
-
-      moveThumb : function(pageLocation) {
-          var that = this,
-              direction = this.orientation === 'y' ? 'top' : 'left',
-              distanceFromEdge = that.gutter.getBoundingClientRect(),
-              offBy =  pageLocation - distanceFromEdge[direction] - that.offset;
-
-          offBy = that.normalizeRange(offBy);
-
-          that.thumb.style[direction] = offBy + '%';
-
-          this.percent = offBy.toFixed(2)
-      }, //end movethumb value
-
-      setOrientation : function(orientation) {
-          this.orientation = orientation;
-
-      },
-
-      getMaxScroll : function() {
-          var direction = this.orientation === 'y' ? 'clientHeight' : 'clientWidth';
-          return this.gutter[direction];
-
-      },
-
-      configureOrientation : function() {
-          var orientation = 'y';
-
-          if ('horizontal' in this.attributes) {
-              orientation = 'x';
-              this.bar.classList.add('horizontal');
-          }
-
-          this.setOrientation(orientation);
-      }
-
-    });
+    
 
   </script>
 
